@@ -2,12 +2,14 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { Answers } from "./form/schema";
+import type { ResultadoPlanos } from "./planos/tipos";
 
 export type Solicitud = {
   id: string;
   creadaEn: string;
-  estado: "recibida";
+  estado: "recibida" | "planos_generados";
   respuestas: Answers;
+  planos?: ResultadoPlanos;
 };
 
 // Guardado en archivos JSON: suficiente para el MVP y el piloto en un
@@ -33,6 +35,14 @@ export async function obtenerSolicitud(id: string): Promise<Solicitud | null> {
   } catch {
     return null;
   }
+}
+
+export async function guardarPlanos(id: string, planos: ResultadoPlanos): Promise<Solicitud | null> {
+  const s = await obtenerSolicitud(id);
+  if (!s) return null;
+  const actualizada: Solicitud = { ...s, estado: "planos_generados", planos };
+  await writeFile(fileFor(id), JSON.stringify(actualizada, null, 2));
+  return actualizada;
 }
 
 export async function listarSolicitudes(): Promise<Solicitud[]> {
